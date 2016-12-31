@@ -49,6 +49,7 @@
 #include <linux/scatterlist.h>
 #include <crypto/scatterwalk.h>
 #include <linux/slab.h>
+#include <linux/compiler.h>
 
 struct crypto_cts_ctx {
 	struct crypto_blkcipher *child;
