@@ -66,17 +66,13 @@ static int crypto_rng_report(struct sk_buff *skb, struct crypto_alg *alg)
 {
 	struct crypto_report_rng rrng;
 
-	strncpy(rrng.type, "rng", sizeof(rrng.type));
+	memset(&rrng, 0, sizeof(rrng));
 
-	rrng.seedsize = alg->cra_rng.seedsize;
+	strscpy(rrng.type, "rng", sizeof(rrng.type));
 
-	if (nla_put(skb, CRYPTOCFGA_REPORT_RNG,
-		    sizeof(struct crypto_report_rng), &rrng))
-		goto nla_put_failure;
-	return 0;
+	rrng.seedsize = seedsize(alg);
 
-nla_put_failure:
-	return -EMSGSIZE;
+	return nla_put(skb, CRYPTOCFGA_REPORT_RNG, sizeof(rrng), &rrng);
 }
 #else
 static int crypto_rng_report(struct sk_buff *skb, struct crypto_alg *alg)
