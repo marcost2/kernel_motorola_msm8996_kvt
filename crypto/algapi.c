@@ -391,7 +391,7 @@ static int crypto_remove_alg(struct crypto_alg *alg, struct list_head *list)
 	return 0;
 }
 
-int crypto_unregister_alg(struct crypto_alg *alg)
+void crypto_unregister_alg(struct crypto_alg *alg)
 {
 	int ret;
 	LIST_HEAD(list);
@@ -400,15 +400,14 @@ int crypto_unregister_alg(struct crypto_alg *alg)
 	ret = crypto_remove_alg(alg, &list);
 	up_write(&crypto_alg_sem);
 
-	if (ret)
-		return ret;
+	if (WARN(ret, "Algorithm %s is not registered", alg->cra_driver_name))
+		return;
 
 	BUG_ON(atomic_read(&alg->cra_refcnt) != 1);
 	if (alg->cra_destroy)
 		alg->cra_destroy(alg);
 
 	crypto_remove_final(&list);
-	return 0;
 }
 EXPORT_SYMBOL_GPL(crypto_unregister_alg);
 
@@ -432,18 +431,12 @@ err:
 }
 EXPORT_SYMBOL_GPL(crypto_register_algs);
 
-int crypto_unregister_algs(struct crypto_alg *algs, int count)
+void crypto_unregister_algs(struct crypto_alg *algs, int count)
 {
-	int i, ret;
+	int i;
 
-	for (i = 0; i < count; i++) {
-		ret = crypto_unregister_alg(&algs[i]);
-		if (ret)
-			pr_err("Failed to unregister %s %s: %d\n",
-			       algs[i].cra_driver_name, algs[i].cra_name, ret);
-	}
-
-	return 0;
+	for (i = 0; i < count; i++)
+		crypto_unregister_alg(&algs[i]);
 }
 EXPORT_SYMBOL_GPL(crypto_unregister_algs);
 
@@ -563,7 +556,7 @@ err:
 }
 EXPORT_SYMBOL_GPL(crypto_register_instance);
 
-int crypto_unregister_instance(struct crypto_alg *alg)
+void crypto_unregister_instance(struct crypto_alg *alg)
 {
 	int err;
 	struct crypto_instance *inst = (void *)alg;
@@ -571,7 +564,7 @@ int crypto_unregister_instance(struct crypto_alg *alg)
 	LIST_HEAD(users);
 
 	if (!(alg->cra_flags & CRYPTO_ALG_INSTANCE))
-		return -EINVAL;
+		return;
 
 	BUG_ON(atomic_read(&alg->cra_refcnt) != 1);
 
@@ -582,13 +575,12 @@ int crypto_unregister_instance(struct crypto_alg *alg)
 
 	up_write(&crypto_alg_sem);
 
-	if (err)
-		return err;
+	if (WARN(err, "Algorithm %s is not registered", alg->cra_driver_name))
+		return;
 
 	tmpl->free(inst);
 	crypto_remove_final(&users);
 
-	return 0;
 }
 EXPORT_SYMBOL_GPL(crypto_unregister_instance);
 
