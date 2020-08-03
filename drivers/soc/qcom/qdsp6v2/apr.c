@@ -608,7 +608,8 @@ void apr_cb_func(void *buf, int len, void *priv)
 
 	temp_port = ((data.dest_port >> 8) * 8) + (data.dest_port & 0xFF);
 	pr_debug("port = %d t_port = %d\n", data.src_port, temp_port);
-	if (c_svc->port_cnt && c_svc->port_fn[temp_port])
+	if (((temp_port >= 0) && (temp_port < APR_MAX_PORTS))
+		&& (c_svc->port_cnt && c_svc->port_fn[temp_port]))
 		c_svc->port_fn[temp_port](&data,  c_svc->port_priv[temp_port]);
 	else if (c_svc->fn)
 		c_svc->fn(&data, c_svc->priv);
@@ -624,7 +625,7 @@ int apr_get_svc(const char *svc_name, int domain_id, int *client_id,
 	struct apr_svc_table *tbl;
 	int ret = 0;
 
-	if ((domain_id == APR_DOMAIN_ADSP)) {
+	if (domain_id == APR_DOMAIN_ADSP) {
 		tbl = (struct apr_svc_table *)&svc_tbl_qdsp6;
 		size = ARRAY_SIZE(svc_tbl_qdsp6);
 	} else {

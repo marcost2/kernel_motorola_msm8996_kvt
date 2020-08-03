@@ -2427,7 +2427,7 @@ int msm_pcie_debug_info(struct pci_dev *dev, u32 option, u32 base,
 			u32 offset, u32 mask, u32 value)
 {
 	int ret = 0;
-	struct msm_pcie_dev_t *pdev = NULL;
+	struct msm_pcie_dev_t *pdev;
 
 	if (!dev) {
 		pr_err("PCIe: the input pci dev is NULL.\n");
@@ -4363,7 +4363,7 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 
 	/* assert PCIe reset link to keep EP in reset */
 
-	PCIE_DBG(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
+	PCIE_INFO(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
 	gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 				dev->gpio[MSM_PCIE_GPIO_PERST].on);
@@ -4490,7 +4490,7 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 		dev->rc_idx, retries);
 
 	if (pcie_phy_is_ready(dev))
-		PCIE_DBG(dev, "PCIe RC%d PHY is ready!\n", dev->rc_idx);
+		PCIE_INFO(dev, "PCIe RC%d PHY is ready!\n", dev->rc_idx);
 	else {
 		PCIE_ERR(dev, "PCIe PHY RC%d failed to come up!\n",
 			dev->rc_idx);
@@ -4510,7 +4510,7 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 
 	/* de-assert PCIe reset link to bring EP out of reset */
 
-	PCIE_DBG(dev, "PCIe: Release the reset of endpoint of RC%d.\n",
+	PCIE_INFO(dev, "PCIe: Release the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
 	gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 				1 - dev->gpio[MSM_PCIE_GPIO_PERST].on);
@@ -4537,9 +4537,9 @@ int msm_pcie_enable(struct msm_pcie_dev_t *dev, u32 options)
 		msm_pcie_confirm_linkup(dev, false, false, NULL)) {
 		PCIE_DBG(dev, "Link is up after %d checkings\n",
 			link_check_count);
-		PCIE_DBG(dev, "PCIe RC%d link initialized\n", dev->rc_idx);
+		PCIE_INFO(dev, "PCIe RC%d link initialized\n", dev->rc_idx);
 	} else {
-		PCIE_DBG(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
+		PCIE_INFO(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
 			dev->rc_idx);
 		gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
 			dev->gpio[MSM_PCIE_GPIO_PERST].on);
@@ -4618,7 +4618,7 @@ void msm_pcie_disable(struct msm_pcie_dev_t *dev, u32 options)
 	dev->power_on = false;
 	dev->link_turned_off_counter++;
 
-	PCIE_DBG(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
+	PCIE_INFO(dev, "PCIe: Assert the reset of endpoint of RC%d.\n",
 		dev->rc_idx);
 
 	gpio_set_value(dev->gpio[MSM_PCIE_GPIO_PERST].num,
@@ -5422,7 +5422,7 @@ static irqreturn_t handle_global_irq(int irq, void *data)
 	int i;
 	struct msm_pcie_dev_t *dev = data;
 	unsigned long irqsave_flags;
-	u32 status = 0;
+	u32 status;
 
 	spin_lock_irqsave(&dev->global_irq_lock, irqsave_flags);
 

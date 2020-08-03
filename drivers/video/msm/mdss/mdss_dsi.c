@@ -33,7 +33,6 @@
 #include "mdss_debug.h"
 #include "mdss_dsi_phy.h"
 #include "mdss_dba_utils.h"
-#include "mdss_livedisplay.h"
 
 #define XO_CLK_RATE	19200000
 #define CMDLINE_DSI_CTL_NUM_STRING_LEN 2
@@ -410,7 +409,7 @@ static int mdss_dsi_panel_power_ulp(struct mdss_panel_data *pdata,
 int mdss_dsi_panel_power_ctrl(struct mdss_panel_data *pdata,
 	int power_state)
 {
-	int ret;
+	int ret = 0;
 	struct mdss_panel_info *pinfo;
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
 
@@ -2660,6 +2659,7 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 		break;
 	case MDSS_EVENT_PANEL_OFF:
 		power_state = (int) (unsigned long) arg;
+		disable_esd_thread();
 		ctrl_pdata->ctrl_state &= ~CTRL_STATE_MDP_ACTIVE;
 		if (ctrl_pdata->off_cmds.link_state == DSI_LP_MODE)
 			rc = mdss_dsi_blank(pdata, power_state);
@@ -2757,9 +2757,6 @@ static int mdss_dsi_event_handler(struct mdss_panel_data *pdata,
 				queue_delayed_work(ctrl_pdata->workq,
 					&ctrl_pdata->dba_work, HZ);
 		}
-		break;
-	case MDSS_EVENT_UPDATE_LIVEDISPLAY:
-		rc = mdss_livedisplay_update(ctrl_pdata, (int)(unsigned long) arg);
 		break;
 	default:
 		pr_debug("%s: unhandled event=%d\n", __func__, event);

@@ -13,6 +13,7 @@
 #include "dsi-panel-mot-tianma-570-hd-video.dtsi"
 #include "dsi-panel-mot-djn-570-hd-video.dtsi"
 #include "dsi-panel-mot-djn-571-hd-video.dtsi"
+#include "dsi-panel-mot-wistron-570-hd-video.dtsi"
 / {
 	aliases {
 		/delete-property/ i2c4;
@@ -103,8 +104,8 @@
 		cap,use_channel_bottom = <0x02>;
 		cap,raw_data_channel = <0x01>;
 		cap,scan_period = <0x02>;
-		reg_array_len = <3>;
-		reg_array_val = <0x13 0x0a 0x18 0x61 0x19 0x61>;
+		reg_array_len = <11>;
+		reg_array_val = <0x12 0x02 0x13 0x0a 0x15 0xc2 0x16 0x30 0x17 0x4b 0x18 0x41 0x19 0x41 0x1a 0x18 0x21 0x1a 0x22 0x08 0x23 0x20>;
 	};
 
 	sar_abov:abov@20 {
@@ -147,6 +148,39 @@
 		status = "ok";
 		novatek,reset-gpio = <&tlmm 64 0x00>;
 		novatek,irq-gpio = <&tlmm 65 0x2001>;
+	};
+
+	focaltech@38{
+		compatible = "focaltech,mmi";
+		reg = <0x38>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <65 0x02>;
+		vcc_i2c-supply = <&pm8917_l6>;
+		pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
+		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+		pinctrl-2 = <&ts_release>;
+		focaltech,name = "fts_ts";
+		focaltech,family-id = <0x08>;
+		focaltech,reset-gpio = <&tlmm 64 0x01>;
+		focaltech,irq-gpio = <&tlmm 65 0x02>;
+		focaltech,display-coords = <0 0 720 1440>;
+		focaltech,max-touch-number = <10>;
+		focaltech,no-force-update;
+		focaltech,i2c-pull-up;
+		focaltech,group-id = <1>;
+		focaltech,hard-reset-delay-ms = <20>;
+		focaltech,soft-reset-delay-ms = <200>;
+		focaltech,num-max-touches = <5>;
+		focaltech,fw-delay-aa-ms = <30>;
+		focaltech,fw-delay-55-ms = <30>;
+		focaltech,fw-upgrade-id1 = <0x79>;
+		focaltech,fw-upgrade-id2 = <0x08>;
+		focaltech,fw-delay-readid-ms = <10>;
+		focaltech,fw-delay-era-flsh-ms = <2000>;
+		focaltech,fw-auto-cal;
+		focaltech,resume-in-workqueue;
+		focaltech,ignore-id-check;
 	};
 
 };
@@ -295,7 +329,7 @@
 	qcom,temp-slightly-cool-current-ma = <700>;
 	qcom,slightly-cool-temp-c = <15>;
 	qcom,enable-charging-limit;
-	qcom,upper-limit-capacity = <70>;
+	qcom,upper-limit-capacity = <75>;
 	qcom,lower-limit-capacity = <60>;
 };
 
@@ -305,6 +339,8 @@
 	qcom,irq-volt-empty-mv = <3200>;
 	qcom,fg-cutoff-voltage-mv = <3400>;
 	qcom,fg-iterm-ma = <300>;
+	qcom,cl-vbat-est-thr-uv = <300000>;
+	qcom,fg-force-restart-enable;
 };
 
 &mot_batterydata {

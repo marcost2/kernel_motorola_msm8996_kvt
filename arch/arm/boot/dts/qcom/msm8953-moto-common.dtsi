@@ -659,7 +659,7 @@
 	sound {
 		status = "ok";
 		compatible = "qcom,msm8952-audio-slim-codec";
-		qcom,model = "msm8952-marley-card";
+		qcom,model = "msm8939-tapan-snd-card"; // Actually msm8952-marley-card
 
 		/* qcom,marley-mclk-clk-freq = <9600000>; */
 		asoc-platform = <&pcm0>, <&pcm1>, <&pcm2>, <&voip>, <&voice>,
@@ -962,8 +962,6 @@
 	/* period below corresponds to 175 Hz */
 	qcom,wave-play-rate-us = <5714>;
 	qcom,vmax-mv = <2900>;
-	qcom,vmax-low-mv = <1160>;
-	qcom,context-haptics;
 	qcom,brake-pattern = [03 03 02 00];
 	qcom,misc-trim-error-rc19p2-clk-reg-present;
 };

@@ -218,7 +218,8 @@ int dwc3_gadget_resize_tx_fifos(struct dwc3 *dwc, struct dwc3_ep *dep)
 	tmp = ((max_packet + mdwidth) * mult) + mdwidth;
 	fifo_size = DIV_ROUND_UP(tmp, mdwidth);
 	dep->fifo_depth = fifo_size;
-	fifo_size |= (dwc->last_fifo_depth << 16);
+	fifo_size |= (dwc3_readl(dwc->regs, DWC3_GTXFIFOSIZ(0)) & 0xffff0000)
+						+ (dwc->last_fifo_depth << 16);
 	dwc->last_fifo_depth += (fifo_size & 0xffff);
 
 	dev_dbg(dwc->dev, "%s ep_num:%d last_fifo_depth:%04x fifo_depth:%d\n",
@@ -3116,6 +3117,8 @@ static void dwc3_gadget_conndone_interrupt(struct dwc3 *dwc)
 		dwc->gadget.speed = USB_SPEED_LOW;
 		break;
 	}
+
+	dwc->eps[1]->endpoint.maxpacket = dwc->gadget.ep0->maxpacket;
 
 	/* Enable USB2 LPM Capability */
 

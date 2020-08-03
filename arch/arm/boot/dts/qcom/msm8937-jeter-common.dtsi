@@ -13,9 +13,9 @@
 #include "dsi-panel-mot-tianma-570-hd-video.dtsi"
 #include "dsi-panel-mot-djn-570-hd-video.dtsi"
 #include "dsi-panel-mot-djn-571-hd-video.dtsi"
+#include "dsi-panel-mot-wistron-570-hd-video.dtsi"
 / {
 	aliases {
-		i2c5 = &i2c_5;
 		/delete-property/ i2c4;
 	};
 };
@@ -39,32 +39,6 @@
 
 &soc {
 	/delete-node/ i2c@78b8000;
-
-	i2c_5: i2c@7af5000 { /* BLSP2 QUP1 */
-		status = "okay";
-		compatible = "qcom,i2c-msm-v2";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		reg-names = "qup_phys_addr";
-		reg = <0x7af5000 0x600>;
-		interrupt-names = "qup_irq";
-		interrupts = <0 299 0>;
-		qcom,clk-freq-out = <400000>;
-		qcom,clk-freq-in  = <19200000>;
-		clock-names = "iface_clk", "core_clk";
-		clocks = <&clock_gcc clk_gcc_blsp2_ahb_clk>,
-			<&clock_gcc clk_gcc_blsp2_qup1_i2c_apps_clk>;
-
-		pinctrl-names = "i2c_active", "i2c_sleep";
-		pinctrl-0 = <&i2c_5_active>;
-		pinctrl-1 = <&i2c_5_sleep>;
-		qcom,noise-rjct-scl = <0>;
-		qcom,noise-rjct-sda = <0>;
-		qcom,master-id = <84>;
-		dmas = <&dma_blsp2 4 64 0x20000020 0x20>,
-			<&dma_blsp2 5 32 0x20000020 0x20>;
-		dma-names = "tx", "rx";
-	};
 
 	sound {
 		/delete-property/ qcom,cdc-us-euro-gpios;
@@ -178,40 +152,39 @@
 		novatek,irq-gpio = <&tlmm 65 0x2001>;
 	};
 
-};
-
-&i2c_5 {
-	nq@28 {
-		compatible = "qcom,nq-nci";
-		status = "/chosen", "mmi,nfc", "true";
-		reg = <0x28>;
-		qcom,nq-irq = <&tlmm 17 0x00>;
-		qcom,nq-ven = <&tlmm 16 0x00>;
-		qcom,nq-firm = <&tlmm 130 0x00>;
-		qcom,nq-clkreq = <&pm8937_gpios 5 0x00>;
+	focaltech@38{
+		compatible = "focaltech,mmi";
+		reg = <0x38>;
 		interrupt-parent = <&tlmm>;
-		qcom,clk-src = "BBCLK2";
-		interrupts = <17 0>;
-		interrupt-names = "nfc_irq";
-		pinctrl-names = "nfc_active", "nfc_suspend";
-		pinctrl-0 = <&nfc_int_active &nfc_disable_active>;
-		pinctrl-1 = <&nfc_int_suspend &nfc_disable_suspend>;
-		clocks = <&clock_gcc clk_bb_clk2_pin>;
-		clock-names = "ref_clk";
+		interrupts = <65 0x02>;
+		vcc_i2c-supply = <&pm8937_l6>;
+		pinctrl-names = "pmx_ts_active","pmx_ts_suspend","pmx_ts_release";
+		pinctrl-0 = <&ts_int_active &ts_reset_active>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend>;
+		pinctrl-2 = <&ts_release>;
+		focaltech,name = "fts_ts";
+		focaltech,family-id = <0x08>;
+		focaltech,reset-gpio = <&tlmm 64 0x01>;
+		focaltech,irq-gpio = <&tlmm 65 0x02>;
+		focaltech,display-coords = <0 0 720 1440>;
+		focaltech,max-touch-number = <10>;
+		focaltech,no-force-update;
+		focaltech,i2c-pull-up;
+		focaltech,group-id = <1>;
+		focaltech,hard-reset-delay-ms = <20>;
+		focaltech,soft-reset-delay-ms = <200>;
+		focaltech,num-max-touches = <5>;
+		focaltech,fw-delay-aa-ms = <30>;
+		focaltech,fw-delay-55-ms = <30>;
+		focaltech,fw-upgrade-id1 = <0x79>;
+		focaltech,fw-upgrade-id2 = <0x08>;
+		focaltech,fw-delay-readid-ms = <10>;
+		focaltech,fw-delay-era-flsh-ms = <2000>;
+		focaltech,fw-auto-cal;
+		focaltech,resume-in-workqueue;
+		focaltech,ignore-id-check;
 	};
-};
 
-&pm8937_gpios {
-	gpio@c400 {
-		qcom,mode = <0>;
-		qcom,output-type = <0>;
-		qcom,pull = <0>;
-		qcom,vin-sel = <2>;
-		qcom,out-strength = <3>;
-		qcom,src-sel = <0>;
-		qcom,master-en = <1>;
-		status = "ok";
-	};
 };
 
 &spi_4{ /* BLSP1 QUP4 */
@@ -310,7 +283,7 @@
 &pmi8950_charger {
 	qcom,fastchg-current-ma = <2800>;
 	qcom,chg-thermal-mitigation = <2800>, <2300>,<1800>, <1500>,
-					<1000>,<700>, <400>;
+					<1000>,<700>, <500>;
 	/delete-property/ qcom,dc-thermal-mitigation;
 	qcom,parallel-charge-current-map = <2800 2800 0>,
 					<2300 2300 0>,
@@ -318,7 +291,7 @@
 					<1500 1500 0>,
 					<1000 1000 0>,
 					<700 700 0>,
-					<400 400 0>;
+					<500 500 0>;
 	qcom,stepchg-voltage-mv = <4200>;
 	qcom,stepchg-current-ma = <2000>;
 	qcom,stepchg-taper-ma = <1800>;
@@ -330,7 +303,7 @@
 	qcom,temp-slightly-cool-current-ma = <700>;
 	qcom,slightly-cool-temp-c = <15>;
 	qcom,enable-charging-limit;
-	qcom,upper-limit-capacity = <70>;
+	qcom,upper-limit-capacity = <75>;
 	qcom,lower-limit-capacity = <60>;
 };
 

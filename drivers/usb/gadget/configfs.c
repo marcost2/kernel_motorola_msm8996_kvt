@@ -304,6 +304,7 @@ static ssize_t gadget_dev_desc_UDC_store(struct gadget_info *gi,
 		ret = unregister_gadget(gi);
 		if (ret)
 			goto err;
+		kfree(name);
 	} else {
 		if (gi->udc_name) {
 			ret = -EBUSY;
@@ -443,11 +444,6 @@ static int config_usb_cfg_link(
 	}
 
 	f = usb_get_function(fi);
-	if (f == NULL) {
-		/* Are we trying to symlink PTP without MTP function? */
-		ret = -EINVAL; /* Invalid Configuration */
-		goto out;
-	}
 	if (IS_ERR(f)) {
 		ret = PTR_ERR(f);
 		goto out;

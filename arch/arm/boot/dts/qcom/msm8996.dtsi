@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -21,7 +21,7 @@
 	interrupt-parent = <&intc>;
 
 	chosen {
-		bootargs = "sched_enable_hmp=1 sched_enable_power_aware=1 app_setting.use_32bit_app_setting=1";
+		bootargs = "sched_enable_hmp=1 sched_enable_power_aware=1 app_setting.use_32bit_app_setting=1 kpti=1";
 	};
 
 	aliases {
@@ -168,7 +168,7 @@
 					dev = "/dev/block/platform/soc/624000.ufshc/by-name/system";
 					type = "ext4";
 					mnt_flags = "ro,barrier=1,discard";
-					fsmgr_flags = "wait";
+					fsmgr_flags = "wait,verify";
 					status = "ok";
 				};
 
@@ -359,15 +359,12 @@
 		qcom,master-id = <84>;
 		qcom,clk-freq-out = <400000>;
 		qcom,clk-freq-in  = <19200000>;
-		qcom,i2c-clk = <&tlmm 88 0>;
-		qcom,i2c-dat = <&tlmm 87 0>;
 		clock-names = "iface_clk", "core_clk";
 		clocks = <&clock_gcc clk_gcc_blsp2_ahb_clk>,
 			 <&clock_gcc clk_gcc_blsp2_qup6_i2c_apps_clk>;
-		pinctrl-names = "i2c_active", "i2c_sleep", "i2c_bitbang";
+		pinctrl-names = "i2c_active", "i2c_sleep";
 		pinctrl-0 = <&i2c_12_active>;
 		pinctrl-1 = <&i2c_12_sleep>;
-		pinctrl-2 = <&i2c_12_bitbang>;
 	};
 
 

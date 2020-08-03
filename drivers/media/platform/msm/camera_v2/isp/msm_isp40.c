@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -591,11 +591,13 @@ static void msm_vfe40_read_irq_status_and_clear(struct vfe_device *vfe_dev,
 
 	*irq_status0 &= vfe_dev->irq0_mask;
 	*irq_status1 &= vfe_dev->irq1_mask;
+#ifdef CONFIG_MSMB_CAMERA_2017
 	if (*irq_status0 &&
 		(*irq_status0 == msm_camera_io_r(vfe_dev->vfe_base + 0x38))) {
 		msm_camera_io_w(*irq_status0, vfe_dev->vfe_base + 0x30);
 		msm_camera_io_w_mb(1, vfe_dev->vfe_base + 0x24);
 	}
+#endif
 
 	if (*irq_status1 & (1 << 0)) {
 		vfe_dev->error_info.camif_status =
@@ -1112,8 +1114,10 @@ static int msm_vfe40_start_fetch_engine_multi_pass(struct vfe_device *vfe_dev,
 				fe_cfg->stream_id);
 		vfe_dev->fetch_engine_info.bufq_handle = bufq_handle;
 
+		mutex_lock(&vfe_dev->buf_mgr->lock);
 		rc = vfe_dev->buf_mgr->ops->get_buf_by_index(
 			vfe_dev->buf_mgr, bufq_handle, fe_cfg->buf_idx, &buf);
+		mutex_unlock(&vfe_dev->buf_mgr->lock);
 		if (rc < 0 || !buf) {
 			pr_err("%s: No fetch buffer rc= %d buf= %pK\n",
 				__func__, rc, buf);
@@ -1218,6 +1222,10 @@ static void msm_vfe40_cfg_fetch_engine(struct vfe_device *vfe_dev,
 	case V4L2_PIX_FMT_P16GBRG10:
 	case V4L2_PIX_FMT_P16GRBG10:
 	case V4L2_PIX_FMT_P16RGGB10:
+	case V4L2_PIX_FMT_P16BGGR12:
+	case V4L2_PIX_FMT_P16GBRG12:
+	case V4L2_PIX_FMT_P16GRBG12:
+	case V4L2_PIX_FMT_P16RGGB12:
 		main_unpack_pattern = 0xB210;
 		break;
 	default:
@@ -1786,7 +1794,9 @@ static int msm_vfe40_axi_restart(struct vfe_device *vfe_dev,
 	/* Start AXI */
 	msm_camera_io_w(0x0, vfe_dev->vfe_base + 0x2C0);
 
+#ifdef CONFIG_MSMB_CAMERA_2017
 	if (vfe_dev->recovery_irq0_mask || vfe_dev->recovery_irq1_mask)
+#endif
 		msm_vfe40_config_irq(vfe_dev, vfe_dev->recovery_irq0_mask,
 		vfe_dev->recovery_irq1_mask, MSM_ISP_IRQ_SET);
 

@@ -2275,8 +2275,6 @@ static void smbchg_parallel_usb_enable(struct smbchg_chip *chip,
 			"Couldn't set Vflt on parallel psy rc: %d\n", rc);
 		return;
 	}
-	power_supply_set_voltage_limit(chip->usb_psy,
-			(chip->vfloat_mv + 50) * 1000);
 	/* Set USB ICL */
 	target_icl_ma = get_effective_result_locked(chip->usb_icl_votable);
 	if (target_icl_ma < 0) {
@@ -3349,11 +3347,8 @@ static int smbchg_float_voltage_set(struct smbchg_chip *chip, int vfloat_mv)
 
 	if (rc)
 		dev_err(chip->dev, "Couldn't set float voltage rc = %d\n", rc);
-	else {
+	else
 		chip->vfloat_mv = vfloat_mv;
-		power_supply_set_voltage_limit(chip->usb_psy,
-				chip->vfloat_mv * 1000);
-	}
 
 	return rc;
 }
@@ -4248,10 +4243,12 @@ static void smbchg_chg_led_brightness_set(struct led_classdev *cdev,
 	reg = (value > LED_OFF) ? CHG_LED_ON << CHG_LED_SHIFT :
 		CHG_LED_OFF << CHG_LED_SHIFT;
 
-	if (value > LED_OFF)
-		power_supply_set_hi_power_state(chip->bms_psy, 1);
-	else
-		power_supply_set_hi_power_state(chip->bms_psy, 0);
+	if (chip->bms_psy) {
+		if (value > LED_OFF)
+			power_supply_set_hi_power_state(chip->bms_psy, 1);
+		else
+			power_supply_set_hi_power_state(chip->bms_psy, 0);
+	}
 
 	pr_smb(PR_STATUS,
 			"set the charger led brightness to value=%d\n",
@@ -4294,11 +4291,16 @@ static void smbchg_chg_led_blink_set(struct smbchg_chip *chip,
 	u8 reg;
 	int rc;
 
+	if (chip->bms_psy) {
+		if (blinking == 0)
+			power_supply_set_hi_power_state(chip->bms_psy, 0);
+		else
+			power_supply_set_hi_power_state(chip->bms_psy, 1);
+	}
+
 	if (blinking == 0) {
 		reg = CHG_LED_OFF << CHG_LED_SHIFT;
-		power_supply_set_hi_power_state(chip->bms_psy, 0);
 	} else {
-		power_supply_set_hi_power_state(chip->bms_psy, 1);
 		if (blinking == 1)
 			reg = LED_BLINKING_PATTERN2 << CHG_LED_SHIFT;
 		else if (blinking == 2)

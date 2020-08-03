@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -35,7 +35,7 @@
 #include <linux/ipa.h>
 #include <uapi/linux/net_map.h>
 
-#include "ipa_trace.h"
+#include <trace/ipa_trace.h>
 
 #define WWAN_METADATA_SHFT 24
 #define WWAN_METADATA_MASK 0xFF000000
@@ -675,7 +675,7 @@ static int wwan_add_ul_flt_rule_to_ipa(void)
 	/* send ipa_fltr_installed_notif_req_msg_v01 to Q6*/
 	req->source_pipe_index =
 		ipa2_get_ep_mapping(IPA_CLIENT_APPS_LAN_WAN_PROD);
-	req->install_status = QMI_RESULT_SUCCESS_V01;
+	req->install_status = IPA_QMI_RESULT_SUCCESS_V01;
 	req->filter_index_list_len = num_q6_rule;
 	mutex_lock(&ipa_qmi_lock);
 	for (i = 0; i < num_q6_rule; i++) {
@@ -758,7 +758,7 @@ static int find_vchannel_name_index(const char *vchannel_name)
 {
 	int i;
 
-	for (i = 0; i < MAX_NUM_OF_MUX_CHANNEL; i++) {
+	for (i = 0; i < rmnet_index; i++) {
 		if (0 == strcmp(mux_channel[i].vchannel_name, vchannel_name))
 			return i;
 	}
@@ -1608,6 +1608,7 @@ static int ipa_wwan_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 				IPAWANERR("Failed to allocate memory.\n");
 				return -ENOMEM;
 			}
+			extend_ioctl_data.u.if_name[IFNAMSIZ-1] = '\0';
 			len = sizeof(wan_msg->upstream_ifname) >
 			sizeof(extend_ioctl_data.u.if_name) ?
 				sizeof(extend_ioctl_data.u.if_name) :
@@ -2555,7 +2556,7 @@ int rmnet_ipa_set_data_quota(struct wan_ioctl_set_data_quota *data)
 	if (index == MAX_NUM_OF_MUX_CHANNEL) {
 		IPAWANERR("%s is an invalid iface name\n",
 			  data->interface_name);
-		return -EFAULT;
+		return -ENODEV;
 	}
 
 	mux_id = mux_channel[index].mux_id;
@@ -2673,7 +2674,10 @@ int rmnet_ipa_query_tethering_stats(struct wan_ioctl_query_tether_stats *data,
 		IPAWANERR("reset the pipe stats\n");
 	} else {
 		/* print tethered-client enum */
-		IPAWANDBG_LOW("Tethered-client enum(%d)\n", data->ipa_client);
+		if (data == NULL)
+			return -EINVAL;
+		IPAWANDBG_LOW("Tethered-client enum(%d)\n",
+				data->ipa_client);
 	}
 
 	rc = ipa_qmi_get_data_stats(req, resp);
@@ -2682,7 +2686,7 @@ int rmnet_ipa_query_tethering_stats(struct wan_ioctl_query_tether_stats *data,
 		kfree(req);
 		kfree(resp);
 		return rc;
-	} else if (reset) {
+	} else if (data == NULL) {
 		kfree(req);
 		kfree(resp);
 		return 0;

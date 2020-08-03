@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2018, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -1113,8 +1113,10 @@ int msm_vfe47_start_fetch_engine_multi_pass(struct vfe_device *vfe_dev,
 			fe_cfg->stream_id);
 		vfe_dev->fetch_engine_info.bufq_handle = bufq_handle;
 
+		mutex_lock(&vfe_dev->buf_mgr->lock);
 		rc = vfe_dev->buf_mgr->ops->get_buf_by_index(
 			vfe_dev->buf_mgr, bufq_handle, fe_cfg->buf_idx, &buf);
+		mutex_unlock(&vfe_dev->buf_mgr->lock);
 		if (rc < 0 || !buf) {
 			pr_err("%s: No fetch buffer rc= %d buf= %pK\n",
 				__func__, rc, buf);
@@ -1789,7 +1791,7 @@ void msm_vfe47_cfg_axi_ub(struct vfe_device *vfe_dev,
 {
 	struct msm_vfe_axi_shared_data *axi_data = &vfe_dev->axi_data;
 
-	axi_data->wm_ub_cfg_policy = UB_CFG_POLICY;
+	axi_data->wm_ub_cfg_policy = MSM_WM_UB_EQUAL_SLICING;
 	if (axi_data->wm_ub_cfg_policy == MSM_WM_UB_EQUAL_SLICING)
 		msm_vfe47_cfg_axi_ub_equal_slicing(vfe_dev);
 	else

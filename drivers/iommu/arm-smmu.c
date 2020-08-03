@@ -407,6 +407,7 @@ struct arm_smmu_device {
 	char				*bus_client_name;
 
 	enum tz_smmu_device_id		sec_id;
+	int				regulator_defer;
 };
 
 struct arm_smmu_cfg {
@@ -801,11 +802,19 @@ static int arm_smmu_unrequest_bus(struct arm_smmu_device *smmu)
 
 static int arm_smmu_disable_regulators(struct arm_smmu_device *smmu)
 {
+	int ret = 0;
+
 	arm_smmu_unprepare_clocks(smmu);
 	arm_smmu_unrequest_bus(smmu);
-	if (!smmu->gdsc)
-		return 0;
-	return regulator_disable(smmu->gdsc);
+
+	if (smmu->gdsc) {
+		ret = regulator_disable_deferred(smmu->gdsc,
+						 smmu->regulator_defer);
+		WARN(ret, "%s: Regulator disable failed\n",
+			dev_name(smmu->dev));
+	}
+
+	return ret;
 }
 
 static int arm_smmu_enable_regulators(struct arm_smmu_device *smmu)
@@ -3320,6 +3329,12 @@ static int arm_smmu_init_regulators(struct arm_smmu_device *smmu)
 	if (!of_get_property(dev->of_node, "vdd-supply", NULL))
 		return 0;
 
+	if (!of_property_read_u32(dev->of_node,
+				  "qcom,deferred-regulator-disable-delay",
+				  &(smmu->regulator_defer)))
+		dev_info(dev, "regulator defer delay %d\n",
+			smmu->regulator_defer);
+
 	smmu->gdsc = devm_regulator_get(dev, "vdd");
 	if (IS_ERR(smmu->gdsc))
 		return PTR_ERR(smmu->gdsc);
@@ -3502,7 +3517,7 @@ static int arm_smmu_device_cfg_probe(struct arm_smmu_device *smmu)
 	}
 
 	if (id & ID0_SMS) {
-		u32 smr, sid, mask = 0;
+		u32 smr, sid, mask;
 
 		smmu->features |= ARM_SMMU_FEAT_STREAM_MATCH;
 		smmu->num_mapping_groups = (id >> ID0_NUMSMRG_SHIFT) &

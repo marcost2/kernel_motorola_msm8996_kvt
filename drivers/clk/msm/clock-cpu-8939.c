@@ -577,9 +577,9 @@ static void print_opp_table(int a53_c0_cpu, int a53_c1_cpu, bool single_cluster)
 static void populate_opp_table(struct platform_device *pdev,
 					bool single_cluster)
 {
-	struct platform_device *apc0_dev, *apc1_dev;
+	struct platform_device *apc0_dev = NULL, *apc1_dev;
 	struct device_node *apc0_node = NULL, *apc1_node;
-	unsigned long apc0_fmax, apc1_fmax;
+	unsigned long apc0_fmax = 0, apc1_fmax;
 	int cpu, a53_c0_cpu = 0, a53_c1_cpu = 0;
 
 	if (!single_cluster)
@@ -968,7 +968,7 @@ static int __init cpu_clock_a53_init_little(void)
 
 	/* Wait for update to take effect */
 	for (count = 500; count > 0; count--) {
-		if (!(readl_relaxed(base)) & BIT(0))
+		if ((!(readl_relaxed(base))) & BIT(0))
 			break;
 		udelay(1);
 	}

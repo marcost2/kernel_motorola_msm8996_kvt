@@ -34,7 +34,6 @@
 #include "mdss_fb.h"
 #include "mdss_dropbox.h"
 #include "mdss_debug.h"
-#include "mdss_livedisplay.h"
 
 #define MDSS_PANEL_DEFAULT_VER 0xffffffffffffffff
 #define MDSS_PANEL_UNKNOWN_NAME "unknown"
@@ -197,7 +196,7 @@ static void mdss_dsi_panel_apply_settings(struct mdss_dsi_ctrl_pdata *ctrl,
 	mdss_dsi_cmdlist_put(ctrl, &cmdreq);
 }
 
-void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
+static void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 			struct dsi_panel_cmds *pcmds, u32 flags)
 {
 	struct dcs_cmd_req cmdreq;
@@ -250,7 +249,7 @@ static void mdss_dsi_panel_bklt_dcs(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 	memset(&cmdreq, 0, sizeof(cmdreq));
 	cmdreq.cmds = &backlight_cmd;
 	cmdreq.cmds_cnt = 1;
-	cmdreq.flags = CMD_REQ_COMMIT | CMD_CLK_CTRL;
+	cmdreq.flags = CMD_REQ_COMMIT;
 	cmdreq.rlen = 0;
 	cmdreq.cb = NULL;
 
@@ -571,7 +570,10 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			gpio_set_value((ctrl_pdata->disp_en_gpio), 0);
 			gpio_free(ctrl_pdata->disp_en_gpio);
 		}
-		gpio_set_value((ctrl_pdata->rst_gpio), 0);
+		if (!pinfo->rst_disable) {
+			gpio_set_value((ctrl_pdata->rst_gpio), 0);
+			pr_debug("%s:reset gpio down\n", __func__);
+		}
 		gpio_free(ctrl_pdata->rst_gpio);
 		if (gpio_is_valid(ctrl_pdata->mode_gpio))
 			gpio_free(ctrl_pdata->mode_gpio);
@@ -748,7 +750,7 @@ static void mdss_dsi_send_col_page_addr(struct mdss_dsi_ctrl_pdata *ctrl,
 
 	memset(&cmdreq, 0, sizeof(cmdreq));
 	cmdreq.cmds_cnt = 2;
-	cmdreq.flags = CMD_REQ_COMMIT | CMD_CLK_CTRL;
+	cmdreq.flags = CMD_REQ_COMMIT;
 	if (unicast)
 		cmdreq.flags |= CMD_REQ_UNICAST;
 	cmdreq.rlen = 0;
@@ -1132,11 +1134,6 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 
 	panel_notify(PANEL_EVENT_DISPLAY_ON, pinfo);
 
-	if (pdata->event_handler)
-		pdata->event_handler(pdata, MDSS_EVENT_UPDATE_LIVEDISPLAY,
-				(void *)(unsigned long) MODE_UPDATE_ALL);
-
-
 end:
 	if (pinfo->forced_tx_mode_ftr_enabled)
 		mdss_dsi_panel_forced_tx_mode_set(pinfo, true);
@@ -1317,7 +1314,7 @@ static void mdss_dsi_parse_trigger(struct device_node *np, char *trigger,
 }
 
 
-int mdss_dsi_parse_dcs_cmds(struct device_node *np,
+static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
 		struct dsi_panel_cmds *pcmds, char *cmd_key, char *link_key)
 {
 	const char *data;
@@ -2322,6 +2319,38 @@ static void mdss_dsi_parse_esd_params(struct device_node *np,
 	if (!pinfo->esd_check_enabled)
 		return;
 
+	ctrl->status_mode = ESD_MAX;
+	rc = of_property_read_string(np,
+			"qcom,mdss-dsi-panel-status-check-mode", &string);
+	if (!rc) {
+		if (!strcmp(string, "bta_check")) {
+			ctrl->status_mode = ESD_BTA;
+		} else if (!strcmp(string, "reg_read")) {
+			ctrl->status_mode = ESD_REG;
+			ctrl->check_read_status =
+				mdss_dsi_gen_read_status;
+		} else if (!strcmp(string, "reg_read_nt35596")) {
+			ctrl->status_mode = ESD_REG_NT35596;
+			ctrl->status_error_count = 0;
+			ctrl->check_read_status =
+				mdss_dsi_nt35596_read_status;
+		} else if (!strcmp(string, "te_signal_check")) {
+			if (pinfo->mipi.mode == DSI_CMD_MODE) {
+				ctrl->status_mode = ESD_TE;
+			} else {
+				pr_err("TE-ESD not valid for video mode\n");
+				goto error;
+			}
+		} else {
+			pr_err("No valid panel-status-check-mode string\n");
+			goto error;
+		}
+	}
+
+	if ((ctrl->status_mode == ESD_BTA) || (ctrl->status_mode == ESD_TE) ||
+			(ctrl->status_mode == ESD_MAX))
+		return;
+
 	mdss_dsi_parse_dcs_cmds(np, &ctrl->status_cmds,
 			"qcom,mdss-dsi-panel-status-command",
 				"qcom,mdss-dsi-panel-status-command-state");
@@ -2377,43 +2406,14 @@ static void mdss_dsi_parse_esd_params(struct device_node *np,
 		memset(ctrl->status_value, 0, ctrl->groups * status_len);
 	}
 
-	ctrl->status_mode = ESD_MAX;
-	rc = of_property_read_string(np,
-			"qcom,mdss-dsi-panel-status-check-mode", &string);
-	if (!rc) {
-		if (!strcmp(string, "bta_check")) {
-			ctrl->status_mode = ESD_BTA;
-		} else if (!strcmp(string, "reg_read")) {
-			ctrl->status_mode = ESD_REG;
-			ctrl->check_read_status =
-				mdss_dsi_gen_read_status;
-		} else if (!strcmp(string, "reg_read_nt35596")) {
-			ctrl->status_mode = ESD_REG_NT35596;
-			ctrl->status_error_count = 0;
-			ctrl->check_read_status =
-				mdss_dsi_nt35596_read_status;
-		} else if (!strcmp(string, "te_signal_check")) {
-			if (pinfo->mipi.mode == DSI_CMD_MODE) {
-				ctrl->status_mode = ESD_TE;
-			} else {
-				pr_err("TE-ESD not valid for video mode\n");
-				goto error;
-			}
-		} else {
-			pr_err("No valid panel-status-check-mode string\n");
-			goto error;
-		}
-	}
-
 	return;
 
-error:
-	kfree(ctrl->return_buf);
 error2:
 	kfree(ctrl->status_value);
 error1:
 	kfree(ctrl->status_valid_params);
 	kfree(ctrl->status_cmds_rlen);
+error:
 	pinfo->esd_check_enabled = false;
 }
 
@@ -2940,24 +2940,19 @@ static int mdss_panel_parse_display_timings(struct device_node *np,
 
 	timings_np = of_get_child_by_name(np, "qcom,mdss-dsi-display-timings");
 	if (!timings_np) {
-		struct dsi_panel_timing *pt;
-
-		pt = kzalloc(sizeof(*pt), GFP_KERNEL);
-		if (!pt)
-			return -ENOMEM;
+		struct dsi_panel_timing pt;
+		memset(&pt, 0, sizeof(struct dsi_panel_timing));
 
 		/*
 		 * display timings node is not available, fallback to reading
 		 * timings directly from root node instead
 		 */
 		pr_debug("reading display-timings from panel node\n");
-		rc = mdss_dsi_panel_timing_from_dt(np, pt, panel_data);
+		rc = mdss_dsi_panel_timing_from_dt(np, &pt, panel_data);
 		if (!rc) {
-			mdss_dsi_panel_config_res_properties(np, pt,
+			mdss_dsi_panel_config_res_properties(np, &pt,
 					panel_data, true);
-			rc = mdss_dsi_panel_timing_switch(ctrl, &pt->timing);
-		} else {
-			kfree(pt);
+			rc = mdss_dsi_panel_timing_switch(ctrl, &pt.timing);
 		}
 		return rc;
 	}
@@ -3226,6 +3221,8 @@ static int mdss_panel_parse_dt(struct device_node *np,
 
 	pinfo->mipi.lp11_init = of_property_read_bool(np,
 					"qcom,mdss-dsi-lp11-init");
+	pinfo->rst_disable = of_property_read_bool(np,
+					"qcom,mdss-dsi-off-reset-disable");
 	rc = of_property_read_u32(np, "qcom,mdss-dsi-init-delay-us", &tmp);
 	pinfo->mipi.init_delay = (!rc ? tmp : 0);
 
@@ -3280,8 +3277,6 @@ static int mdss_panel_parse_dt(struct device_node *np,
 
 	mdss_dsi_parse_dcs_cmds(np, &ctrl_pdata->lp_off_cmds,
 		"qcom,mdss-dsi-lp-mode-off", NULL);
-
-	mdss_livedisplay_parse_dt(np, pinfo);
 
 	return 0;
 

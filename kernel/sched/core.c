@@ -680,9 +680,9 @@ void resched_cpu(int cpu)
 	struct rq *rq = cpu_rq(cpu);
 	unsigned long flags;
 
-	if (!raw_spin_trylock_irqsave(&rq->lock, flags))
-		return;
-	resched_curr(rq);
+	raw_spin_lock_irqsave(&rq->lock, flags);
+	if (cpu_online(cpu) || cpu == smp_processor_id())
+		resched_curr(rq);
 	raw_spin_unlock_irqrestore(&rq->lock, flags);
 }
 
@@ -1081,7 +1081,7 @@ static void update_rq_clock_task(struct rq *rq, s64 delta)
 	rq->clock_task += delta;
 
 #if defined(CONFIG_IRQ_TIME_ACCOUNTING) || defined(CONFIG_PARAVIRT_TIME_ACCOUNTING)
-	if ((irq_delta + steal) && sched_feat(NONTASK_CAPACITY))
+	if (sched_feat(NONTASK_CAPACITY) && (irq_delta + steal) != 0)
 		sched_rt_avg_update(rq, irq_delta + steal);
 #endif
 }
@@ -3794,12 +3794,12 @@ static void transfer_busy_time(struct rq *rq, struct related_thread_group *grp,
 {
 	u64 wallclock;
 	struct group_cpu_time *cpu_time;
-	u64 *src_curr_runnable_sum, *dst_curr_runnable_sum;
-	u64 *src_prev_runnable_sum, *dst_prev_runnable_sum;
-	u64 *src_nt_curr_runnable_sum, *dst_nt_curr_runnable_sum;
-	u64 *src_nt_prev_runnable_sum, *dst_nt_prev_runnable_sum;
+	u64 *src_curr_runnable_sum = 0, *dst_curr_runnable_sum = 0;
+	u64 *src_prev_runnable_sum = 0, *dst_prev_runnable_sum = 0;
+	u64 *src_nt_curr_runnable_sum = 0, *dst_nt_curr_runnable_sum = 0;
+	u64 *src_nt_prev_runnable_sum = 0, *dst_nt_prev_runnable_sum = 0;
 	struct migration_sum_data d;
-	int migrate_type;
+	int migrate_type = 0;
 
 	if (!sched_freq_aggregate)
 		return;
@@ -3849,8 +3849,6 @@ static void transfer_busy_time(struct rq *rq, struct related_thread_group *grp,
 		dst_nt_curr_runnable_sum = &rq->nt_curr_runnable_sum;
 		src_nt_prev_runnable_sum = &cpu_time->nt_prev_runnable_sum;
 		dst_nt_prev_runnable_sum = &rq->nt_prev_runnable_sum;
-	} else {
-		return;
 	}
 
 	*src_curr_runnable_sum -= p->ravg.curr_window;
@@ -5282,6 +5280,10 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
 
 #ifdef CONFIG_SCHEDSTATS
 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
+#endif
+
+#ifdef CONFIG_CPU_FREQ_STAT
+	cpufreq_task_stats_init(p);
 #endif
 
 	RB_CLEAR_NODE(&p->dl.rb_node);

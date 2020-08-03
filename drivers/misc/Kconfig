@@ -575,7 +575,7 @@ config VEXPRESS_SYSCFG
 
 config UID_SYS_STATS
 	bool "Per-UID statistics"
-	depends on PROFILING
+	depends on PROFILING && TASK_XACCT && TASK_IO_ACCOUNTING
 	help
 	  Per UID based cpu time statistics exported to /proc/uid_cputime
 	  Per UID based io statistics exported to /proc/uid_io
@@ -717,6 +717,12 @@ config FSUSB42_MUX
 	help
 	  This option enables a device driver for the FSUSB42 which is a
 	  2 port High Speed USB/UART Switch.
+
+config DTV_FC8300
+	tristate "FC8300 DTV module support"
+	default n
+	help
+	  Enable/disable FC8300 DTV module support
 
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"

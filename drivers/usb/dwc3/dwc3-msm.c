@@ -2904,6 +2904,7 @@ static int dwc3_msm_power_set_property_usb(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_INPUT_CURRENT_MAX:
 		mdwc->typec_current_max = val->intval;
+		dbg_event(dwc->ctrl_num, 0xFF, "psy type", val->intval);
 
 		dbg_event(dwc->ctrl_num, 0xFF, "TYPE C CURMAX)", val->intval);
 		/* Update chg_current as per type-c charger detection on VBUS */
@@ -2915,7 +2916,6 @@ static int dwc3_msm_power_set_property_usb(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_TYPE:
 		psy->type = val->intval;
-		dbg_event(dwc->ctrl_num, 0xFF, "psy type", val->intval);
 
 		switch (psy->type) {
 		case POWER_SUPPLY_TYPE_USB:
