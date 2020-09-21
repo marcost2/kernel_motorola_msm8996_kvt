@@ -734,6 +734,12 @@ config DTV_FC8300
 	help
 	  Enable/disable FC8300 DTV module support
 
+config MODS_2ND_GEN
+	bool "MODS_2ND_GEN Support"
+	default n
+	help
+	  This option enables the mods 2nd generation hw designation.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
