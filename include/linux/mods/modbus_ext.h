@@ -29,7 +29,7 @@ struct modbus_ext_status {
 
 typedef void (*modbus_ext_cb)(struct modbus_ext_status *status);
 
-#ifdef CONFIG_MODS_MODBUS_EXT
+#if defined(CONFIG_MODS_MODBUS_EXT) || defined(CONFIG_MODS_MODBUS_SWITCH)
 extern int modbus_ext_register_notifier(struct notifier_block *nb,
 		modbus_ext_cb cb);
 extern int modbus_ext_unregister_notifier(struct notifier_block *nb);
