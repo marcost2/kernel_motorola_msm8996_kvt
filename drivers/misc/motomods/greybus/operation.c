@@ -499,6 +499,11 @@ gb_operation_create_common(struct gb_connection *connection, u8 type,
 	struct gb_host_device *hd = connection->hd;
 	struct gb_operation *operation;
 
+	if (!connection) {
+		pr_err("%s connection NULL\n", __func__);
+		return NULL;
+	}
+
 	operation = kmem_cache_zalloc(gb_operation_cache, gfp_flags);
 	if (!operation)
 		return NULL;
@@ -1092,7 +1097,7 @@ int gb_operation_sync_timeout(struct gb_connection *connection, int type,
 
 	ret = gb_operation_request_send_sync_timeout(operation, timeout);
 	if (ret == -ENOTCONN) {
-		pr_debug("greybus: synchronous op of type 0x%02x failed: %d\n",
+		pr_err("greybus: synchronous op of type 0x%02x failed: %d\n",
 			 type, ret);
 	} else if (ret) {
 		pr_err("greybus: synchronous op of type 0x%02x failed: %d\n",

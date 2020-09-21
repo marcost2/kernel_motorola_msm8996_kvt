@@ -18,7 +18,11 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
+#ifdef CONFIG_MODS_NEW_SW_ARCH
+#include <linux/mods/wakelock.h>
+#else
 #include <linux/wakelock.h>
+#endif
 #include <linux/workqueue.h>
 
 #include "cust_kernel_ver.h"
@@ -94,7 +98,9 @@ static void muc_svc_broadcast_slave_notification(struct mods_dl_device *master);
 static int muc_svc_send_reboot(struct mods_dl_device *mods_dev, uint8_t mode);
 static int muc_svc_send_current_limit(struct mods_dl_device *dev, uint8_t limit);
 static int muc_svc_send_current_rsv_ack(struct mods_dl_device *dev);
+#ifdef ENABLE_VERSION_HEARTBEAT
 static int muc_svc_version_heartbeat(void);
+#endif
 static int muc_svc_send_rtc_sync(struct mods_dl_device *mods_dev);
 static int muc_svc_send_test_mode(struct mods_dl_device *mods_dev, uint32_t val);
 
@@ -106,7 +112,7 @@ static void muc_svc_send_kobj_uevent(struct kobject *kobj, const char *event)
 	if (!env)
 		return;
 
-	add_uevent_var(env, event);
+	add_uevent_var(env, "%s", event);
 
 	kobject_uevent_env(kobj, KOBJ_CHANGE, env->envp);
 	kfree(env);
@@ -207,7 +213,7 @@ static void send_event_to_userspace(const char *event,
 	env = kzalloc(sizeof(*env), GFP_KERNEL);
 	if (!env)
 		return;
-	add_uevent_var(env, event);
+	add_uevent_var(env, "%s", event);
 	add_uevent_var(env, "RECOVERY_RETRIES=%d", count);
 	add_uevent_var(env, "INTERFACE_ID=%d", mods_dev->intf_id);
 	if (mods_dev->hpw) {
@@ -256,9 +262,11 @@ muc_svc_attach(struct notifier_block *nb, unsigned long state, void *unused)
 
 void muc_svc_communication_reset(struct mods_dl_device *error_dev)
 {
+#ifdef ENABLE_VERSION_HEARTBEAT
 	/* Try a heartbeat via the version; if it succeeds we are talking */
 	if (!muc_svc_version_heartbeat())
 		return;
+#endif
 
 	dev_err(&svc_dd->pdev->dev, "%s: resetting via interface: %d\n",
 		__func__, error_dev->intf_id);
@@ -875,7 +883,7 @@ svc_gb_conn_create(struct mods_dl_device *dld, struct gb_message *req,
 	struct gb_svc_conn_create_request *conn = req->payload;
 	int ret;
 
-	dev_info(&dd->pdev->dev, "Create Connection: %hu:%hu to %hu:%hu\n",
+	dev_info(&dd->pdev->dev, "Create Connection: %u:%hu to %u:%hu\n",
 			conn->intf1_id, conn->cport1_id,
 			conn->intf2_id, conn->cport2_id);
 
@@ -916,7 +924,7 @@ svc_gb_conn_destroy(struct mods_dl_device *dld, struct gb_message *req,
 	struct muc_svc_data *dd = dld_get_dd(dld);
 	struct gb_svc_conn_destroy_request *conn = req->payload;
 
-	dev_info(&dd->pdev->dev, "Destroy Connection: %hu:%hu to %hu:%hu\n",
+	dev_info(&dd->pdev->dev, "Destroy Connection: %u:%hu to %u:%hu\n",
 			conn->intf1_id, conn->cport1_id,
 			conn->intf2_id, conn->cport2_id);
 
@@ -1832,6 +1840,7 @@ static int muc_svc_control_version(struct mods_dl_device *mods_dev, u8 type,
 	return 0;
 }
 
+#ifdef ENABLE_VERSION_HEARTBEAT
 static int muc_svc_version_heartbeat(void)
 {
 	struct mods_dl_device *mods_dev;
@@ -1857,6 +1866,7 @@ static int muc_svc_version_heartbeat(void)
 
 	return ret;
 }
+#endif
 
 static int
 muc_svc_get_manifest(struct mods_dl_device *mods_dev, uint16_t out_cport)

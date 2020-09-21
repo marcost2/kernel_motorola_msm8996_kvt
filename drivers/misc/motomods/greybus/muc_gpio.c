@@ -177,7 +177,7 @@ static void muc_send_uevent(const char *error)
 	if (!env)
 		return;
 
-	add_uevent_var(env, error);
+	add_uevent_var(env, "%s", error);
 	kobject_uevent_env(&muc_misc_data->dev->kobj, KOBJ_CHANGE, env->envp);
 	kfree(env);
 }
@@ -281,29 +281,49 @@ static void muc_handle_detection(bool force_removal)
 		muc_seq(cdata, cdata->en_seq, cdata->en_seq_len);
 		cdata->bplus_state = MUC_BPLUS_ENABLED;
 
+		/* Re-read state after BPLUS settle time */
+		detected = gpio_get_value(cdata->gpios[MUC_GPIO_DET_N]) == 0;
+	}
+
+	if (detected) {
+#ifdef CONFIG_MODS_2ND_GEN
+		pinctrl_select_state(cdata->pinctrl, cdata->pins_discon);
+		muc_seq(cdata, cdata->select_spi_seq, cdata->select_spi_seq_len);
+#endif
+
 		/* Select SPI/I2C based on CLK signal */
 		if (!cdata->i2c_transport_err &&
 				gpio_get_value(cdata->gpios[MUC_GPIO_CLK])) {
 			pr_info("%s: I2C selected\n", __func__);
-#ifdef CONFIG_MODS_2ND_GEN
-			muc_seq(cdata, cdata->select_i2c_seq, cdata->select_i2c_seq_len);
-#endif
 			muc_register_i2c();
-		} else {
+		}
+#ifdef CONFIG_MODS_2ND_GEN
+		else if (gpio_get_value(cdata->gpios[MUC_GPIO_SPI_MISO]) &&
+				!gpio_get_value(cdata->gpios[MUC_GPIO_CLK])) {
+			gpio_direction_input(cdata->gpios[MUC_GPIO_SPI_MOSI]);
+			if (gpio_get_value(cdata->gpios[MUC_GPIO_SPI_MOSI])) {
+				pr_info("%s: 2nd mods bus selection, miso high,i2c selected\n",
+                                        __func__);
+				pinctrl_select_state(cdata->pinctrl, cdata->pins_i2c_con);
+				muc_seq(cdata, cdata->select_i2c_seq, cdata->select_i2c_seq_len);
+				muc_register_i2c();
+			} else {
+				pr_info("%s: 2nd mods bus selection, SPI selected\n", __func__);
+				gpio_direction_output(cdata->gpios[MUC_GPIO_SPI_MOSI], 0);
+				cdata->i2c_transport_err = false;
+				muc_register_spi();
+			}
+		}
+#endif
+		else {
 			pr_info("%s: SPI selected\n", __func__);
 			cdata->i2c_transport_err = false;
-#ifdef CONFIG_MODS_2ND_GEN
-			muc_seq(cdata, cdata->select_spi_seq, cdata->select_spi_seq_len);
-#endif
 			muc_register_spi();
 		}
 
 		if (muc_pinctrl_select_state_con(cdata))
 			pr_warn("%s: select active pinctrl failed\n",
 				__func__);
-
-		/* Re-read state after BPLUS settle time */
-		detected = gpio_get_value(cdata->gpios[MUC_GPIO_DET_N]) == 0;
 	}
 
 	cdata->muc_detected = detected;
@@ -525,11 +545,29 @@ static int muc_pinctrl_setup(struct muc_data *cdata, struct device *dev)
 		return PTR_ERR(cdata->pins_i2c_con);
 	}
 
-	/* Default to connected initially until detection is complete */
-	ret = pinctrl_select_state(cdata->pinctrl, cdata->pins_spi_con);
-	if (ret) {
-		dev_err(dev, "Failed to select pinctrl initial state\n");
-		return ret;
+	cdata->with_cs_sleep = of_property_read_bool(dev->of_node,
+					"mmi,with-cs-sleep-pinctrl");
+	if (cdata->with_cs_sleep) {
+		cdata->pins_spi_cs_sleep = pinctrl_lookup_state(cdata->pinctrl,
+					"spi_cs_sleep");
+		if (IS_ERR(cdata->pins_spi_cs_sleep)) {
+			dev_err(dev, "Failed to lookup 'pins_spi_cs_sleep' pinctrl\n");
+			return PTR_ERR(cdata->pins_spi_cs_sleep);
+		}
+	}
+
+	cdata->without_default_bus_pinctrl = of_property_read_bool(dev->of_node,
+					"mmi,without-default-bus-pinctrl");
+	if (!cdata->without_default_bus_pinctrl) {
+		/* Default to connected initially until detection is complete */
+		ret = pinctrl_select_state(cdata->pinctrl, cdata->pins_spi_con);
+		if (ret) {
+			dev_err(dev, "Failed to select pinctrl initial state\n");
+			return ret;
+		}
+	} else {
+		dev_info(dev, "without select default greybus pinctrl initial state\n");
+		ret = 0;
 	}
 
 	return 0;
@@ -728,6 +766,11 @@ int muc_gpio_init(struct device *dev, struct muc_data *cdata)
 			__func__, __LINE__);
 		goto free_attach_wq;
 	}
+
+	ret = gpio_direction_input(cdata->gpios[MUC_GPIO_SPI_MOSI]);
+	if (ret)
+		pr_info("%s set mosi(%d) input ret %d\n",
+			__func__, cdata->gpios[MUC_GPIO_SPI_MOSI], ret);
 #endif
 
 	/* Force Flash Sequences (mod core dependent) */

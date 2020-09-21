@@ -37,6 +37,10 @@
 #include "sensors_ext_iio.h"
 #include "sensors_ext.h"
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+#include <linux/iio/buffer_impl.h>
+#endif
+
 /* The name of the DebugFS directory */
 #define DEBUGFS_NAME "greybus-sensors-ext"
 

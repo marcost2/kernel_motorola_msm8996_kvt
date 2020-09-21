@@ -35,6 +35,7 @@ enum {
 	MUC_GPIO_CLK = 11,
 #ifdef CONFIG_MODS_2ND_GEN
 	MUC_GPIO_SPI_I2C_SELECT = 12,
+	MUC_GPIO_MOD_RGB_SELECT = 13,
 #endif
 	MUC_MAX_GPIOS
 };
@@ -47,6 +48,9 @@ static inline bool muc_gpio_optional(int index)
 	return ((index == MUC_GPIO_FORCE_FLASH) ||
 		(index == MUC_GPIO_BPLUS_ISET) ||
 		(index == MUC_GPIO_BPLUS_DISCHARG) ||
+#ifdef CONFIG_MODS_2ND_GEN
+		(index == MUC_GPIO_MOD_RGB_SELECT) ||
+#endif
 		(index == MUC_GPIO_BPLUS_FAULT_N));
 }
 
@@ -129,6 +133,7 @@ struct muc_data {
 	struct pinctrl_state *pins_spi_con;
 	struct pinctrl_state *pins_spi_ack;
 	struct pinctrl_state *pins_i2c_con;
+	struct pinctrl_state *pins_spi_cs_sleep;
 	bool pinctrl_disconnect;
 
 	bool need_det_output;
@@ -148,6 +153,9 @@ struct muc_data {
 	int bplus_fault_cnt;
 
 	bool det_testmode;
+
+	bool with_cs_sleep;
+	bool without_default_bus_pinctrl;
 };
 
 /* Global functions */

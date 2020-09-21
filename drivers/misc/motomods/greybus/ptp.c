@@ -477,6 +477,11 @@ static int gb_ptp_receive(u8 type, struct gb_operation *op)
 			return -EINVAL;
 	case GB_PTP_TYPE_EXT_POWER_CHANGED:
 	case GB_PTP_TYPE_POWER_REQUIRED_CHANGED:
+		if (!power_supply_ptr(ptp)) {
+			pr_warn("%s: psy not initialized\n",
+				__func__);
+			return -EAGAIN;
+		}
 		power_supply_changed(power_supply_ptr(ptp));
 		return 0;
 	default:
@@ -664,6 +669,11 @@ init_and_register(struct gb_connection *connection, struct gb_ptp *ptp)
 					&ptp->desc, &cfg);
 	if (IS_ERR(ptp->psy))
 		return PTR_ERR(ptp->psy);
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+	pr_info("muc send uvent add %s\n", ptp->psy->dev.kobj.name);
+	kobject_uevent(&ptp->psy->dev.kobj, KOBJ_ADD);
+#endif
 
 	return 0;
 }

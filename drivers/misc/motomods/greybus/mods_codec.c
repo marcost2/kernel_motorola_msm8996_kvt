@@ -20,7 +20,11 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>
+#ifdef CONFIG_MODS_NEW_SW_ARCH
+#include <linux/mods/mods_codec_dev.h>
+#else
 #include <linux/mods_codec_dev.h>
+#endif
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -615,12 +619,15 @@ static void mods_codec_shutdown(struct snd_pcm_substream *substream,
 	gb_mods_i2s_get(gb_codec);
 	mutex_unlock(&gb_codec->lock);
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		gb_i2s_mgmt_send_start(gb_codec,
 				GB_I2S_MGMT_PORT_TYPE_RECEIVER, false);
-	else
+		priv->rx_active = false;
+	} else {
 		gb_i2s_mgmt_send_start(gb_codec,
 				GB_I2S_MGMT_PORT_TYPE_TRANSMITTER, false);
+		priv->tx_active = false;
+	}
 
 	if (!priv->rx_active && !priv->tx_active)
 		priv->is_params_set = false;
@@ -639,14 +646,20 @@ static const struct snd_soc_dai_ops mods_codec_dai_ops = {
 	.shutdown = mods_codec_shutdown,
 };
 
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+	//dummy. no dapm_widgets in kernel 4.9
+#else
 static const struct snd_soc_dapm_widget mods_dai_dapm_widgets[] = {
 	SND_SOC_DAPM_AIF_IN("MODS_DAI_RX", "Mods Dai Playback", 0, 0, 0, 0),
 	SND_SOC_DAPM_AIF_OUT("MODS_DAI_TX", "Mods Dai Capture", 0, 0, 0, 0),
 	SND_SOC_DAPM_OUTPUT("MODS_DAI_RX Playback"),
 	SND_SOC_DAPM_INPUT("MODS_DAI_TX Capture"),
 };
+#endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+	//dummy. no dapm_widgets in kernel 4.9
+#else
 static const struct snd_soc_dapm_route mods_codec_dapm_routes[] = {
 	{"MODS_DAI_RX", NULL, "Mods Dai Playback"},
 	{"Mods Dai Capture", NULL, "MODS_DAI_TX"},
@@ -655,6 +668,7 @@ static const struct snd_soc_dapm_route mods_codec_dapm_routes[] = {
 	{"MODS_DAI_TX", NULL, "MODS_DAI_TX Capture"},
 #endif
 };
+#endif
 
 static int mods_codec_probe(struct snd_soc_codec *codec)
 {
@@ -979,10 +993,14 @@ int mods_codec_report_devices(struct gb_snd_codec *codec)
 static struct snd_soc_codec_driver soc_codec_dev_mods = {
 	.probe = mods_codec_probe,
 	.remove = mods_codec_remove,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
+	//dummy. no dapm_widgets in kernel 4.9
+#else
 	.dapm_widgets = mods_dai_dapm_widgets,
 	.num_dapm_widgets = ARRAY_SIZE(mods_dai_dapm_widgets),
 	.dapm_routes = mods_codec_dapm_routes,
 	.num_dapm_routes = ARRAY_SIZE(mods_codec_dapm_routes),
+#endif
 };
 
 static struct snd_soc_dai_driver mods_codec_codec_dai = {
