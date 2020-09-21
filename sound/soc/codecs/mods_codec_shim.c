@@ -31,7 +31,7 @@
 		SNDRV_PCM_RATE_64000 | SNDRV_PCM_RATE_96000 |\
 		SNDRV_PCM_RATE_176400 | SNDRV_PCM_RATE_192000)
 
-#define MODS_FMTS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE | SNDRV_PCM_FMTBIT_S32_LE)
+#define MODS_FMTS (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE)
 
 static struct mods_codec_device *mods_codec_dev;
 static struct snd_soc_codec *priv_codec;
@@ -187,14 +187,16 @@ static const struct snd_soc_dapm_route mods_codec_dapm_routes[] = {
 static int mods_codec_shim_probe(struct snd_soc_codec *codec)
 {
 	int ret;
+	struct snd_soc_dapm_context *dapm;
 
 	mutex_lock(&mods_shim_lock);
 	priv_codec = codec;
-	snd_soc_dapm_new_controls(&codec->dapm, mods_dai_dapm_widgets,
+	dapm = snd_soc_codec_get_dapm(codec);
+	snd_soc_dapm_new_controls(dapm, mods_dai_dapm_widgets,
 			ARRAY_SIZE(mods_dai_dapm_widgets));
-	snd_soc_dapm_add_routes(&codec->dapm, mods_codec_dapm_routes,
+	snd_soc_dapm_add_routes(dapm, mods_codec_dapm_routes,
 			ARRAY_SIZE(mods_codec_dapm_routes));
-	snd_soc_dapm_sync(&codec->dapm);
+	snd_soc_dapm_sync(dapm);
 	if (mods_codec_dev) {
 		snd_soc_codec_set_drvdata(priv_codec,
 					mods_codec_dev->priv_data);
@@ -250,14 +252,14 @@ static struct snd_soc_dai_driver mods_codec_shim_dai = {
 		.rates		= MODS_RATES,
 		.formats	= MODS_FMTS,
 		.channels_min	= 1,
-		.channels_max	= 4,
+		.channels_max	= 2,
 	},
 	.capture = {
 		.stream_name = "Mods Dai Capture",
 		.rates		= MODS_RATES,
 		.formats	= MODS_FMTS,
 		.channels_min	= 1,
-		.channels_max	= 4,
+		.channels_max	= 2,
 	},
 	.ops = &mods_codec_shim_dai_ops,
 };
