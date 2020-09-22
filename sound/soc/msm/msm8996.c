@@ -20,7 +20,6 @@
 #include <linux/regulator/consumer.h>
 #include <linux/io.h>
 #include <linux/module.h>
-#include <device_event.h>
 #include <linux/switch.h>
 #include <linux/input.h>
 #include <linux/mods/modbus_ext.h>
