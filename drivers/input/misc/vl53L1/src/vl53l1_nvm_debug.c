@@ -2,8 +2,7 @@
 /*
 * Copyright (c) 2016, STMicroelectronics - All Rights Reserved
 *
-* This file is part of VL53L1 Core and is dual licensed,
-* either 'STMicroelectronics
+* This file is part of VL53L1 Core and is dual licensed, either 'STMicroelectronics
 * Proprietary license'
 * or 'BSD 3-clause "New" or "Revised" License' , at your option.
 *
@@ -772,27 +771,12 @@ void VL53L1_print_decoded_nvm_data(
 
 	sprintf(
 		ppre_text,
-		"%sfmt_optical_centre.", pprefix);
-
-	VL53L1_print_optical_centre(
-		&(pdata->fmt_optical_centre),
-		ppre_text,
-		VL53L1_TRACE_MODULE_NVM_DATA);
-
-
-
-
-	sprintf(
-		ppre_text,
 		"%sfmt_peak_rate_map.", pprefix);
 
 	VL53L1_print_cal_peak_rate_map(
 		&(pdata->fmt_peak_rate_map),
 		ppre_text,
 		VL53L1_TRACE_MODULE_NVM_DATA);
-
-
-
 
 	sprintf(
 		ppre_text,

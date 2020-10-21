@@ -2,8 +2,7 @@
 /*
 * Copyright (c) 2016, STMicroelectronics - All Rights Reserved
 *
-* This file is part of VL53L1 Core and is dual licensed,
-* either 'STMicroelectronics
+* This file is part of VL53L1 Core and is dual licensed, either 'STMicroelectronics
 * Proprietary license'
 * or 'BSD 3-clause "New" or "Revised" License' , at your option.
 *
@@ -160,7 +159,7 @@ uint32_t VL53L1_duration_maths(
 
 
 uint32_t VL53L1_events_per_spad_maths(
-	int32_t   VL53L1_PRM_00012,
+	int32_t   VL53L1_PRM_00009,
 	uint16_t  num_spads,
 	uint32_t  duration);
 
@@ -259,7 +258,7 @@ uint32_t VL53L1_calc_pll_period_mm(
 
 
 uint16_t VL53L1_rate_maths(
-	int32_t   VL53L1_PRM_00007,
+	int32_t   VL53L1_PRM_00006,
 	uint32_t  time_us);
 
 
@@ -301,13 +300,10 @@ uint16_t VL53L1_rate_per_spad_maths(
 
 
 
-
-
 int32_t VL53L1_range_maths(
 	uint16_t  fast_osc_frequency,
-	uint16_t  VL53L1_PRM_00016,
+	uint16_t  VL53L1_PRM_00013,
 	uint16_t  zero_distance_phase,
-	uint8_t   fractional_bits,
 	int32_t   gain_factor,
 	int32_t   range_offset_mm);
 
@@ -351,7 +347,7 @@ void VL53L1_copy_xtalk_bin_data_to_histogram_data_struct(
 
 void VL53L1_init_histogram_bin_data_struct(
 	int32_t                      bin_value,
-	uint16_t                     VL53L1_PRM_00021,
+	uint16_t                     VL53L1_PRM_00017,
 	VL53L1_histogram_bin_data_t *pdata);
 
 

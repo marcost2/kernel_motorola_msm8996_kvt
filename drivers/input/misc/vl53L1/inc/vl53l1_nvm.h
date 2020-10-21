@@ -2,8 +2,7 @@
 /*
 * Copyright (c) 2016, STMicroelectronics - All Rights Reserved
 *
-* This file is part of VL53L1 Core and is dual licensed,
-* either 'STMicroelectronics
+* This file is part of VL53L1 Core and is dual licensed, either 'STMicroelectronics
 * Proprietary license'
 * or 'BSD 3-clause "New" or "Revised" License' , at your option.
 *
@@ -214,26 +213,6 @@ VL53L1_Error VL53L1_nvm_format_decode(
 
 
 
-VL53L1_Error VL53L1_nvm_decode_optical_centre(
-	uint16_t                             buf_size,
-	uint8_t                             *pbuffer,
-	VL53L1_optical_centre_t             *pdata);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 VL53L1_Error VL53L1_nvm_decode_cal_peak_rate_map(
 	uint16_t                             buf_size,
 	uint8_t                             *pbuffer,
@@ -379,22 +358,6 @@ VL53L1_Error VL53L1_read_nvm(
 	VL53L1_DEV                 Dev,
 	uint8_t                    nvm_format,
 	VL53L1_decoded_nvm_data_t *pnvm_info);
-
-
-
-
-
-
-
-
-
-
-
-
-
-VL53L1_Error VL53L1_read_nvm_optical_centre(
-	VL53L1_DEV                           Dev,
-	VL53L1_optical_centre_t             *pcentre);
 
 
 

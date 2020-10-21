@@ -2,8 +2,7 @@
 /*
 * Copyright (c) 2016, STMicroelectronics - All Rights Reserved
 *
-* This file is part of VL53L1 Core and is dual licensed,
-* either 'STMicroelectronics
+* This file is part of VL53L1 Core and is dual licensed, either 'STMicroelectronics
 * Proprietary license'
 * or 'BSD 3-clause "New" or "Revised" License' , at your option.
 *
@@ -177,14 +176,11 @@ typedef struct {
 	int32_t   min_ambient_thresh_events;
 
 
-	int32_t   signal_total_events_limit;
-
-
 
 	uint16_t  target_reflectance_for_dmax_calc[VL53L1_MAX_AMBIENT_DMAX_VALUES];
 
 
-	uint16_t  max_effective_spads;
+	uint8_t   estimated_spad_yield;
 
 
 
