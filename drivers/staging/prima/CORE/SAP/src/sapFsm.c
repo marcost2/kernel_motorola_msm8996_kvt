@@ -799,7 +799,7 @@ sapSignalHDDevent
                        FL("SAP event callback event = %s"),
                        "eSAP_START_BSS_EVENT");
             sapApAppEvent.sapHddEventCode = eSAP_START_BSS_EVENT;
-            sapApAppEvent.sapevt.sapStartBssCompleteEvent.status = (eSapStatus )context;
+            sapApAppEvent.sapevt.sapStartBssCompleteEvent.status = (eSapStatus )(long)context;
             if(pCsrRoamInfo != NULL ){
                 sapApAppEvent.sapevt.sapStartBssCompleteEvent.staId = pCsrRoamInfo->staId;
             }
@@ -813,7 +813,7 @@ sapSignalHDDevent
                        FL("SAP event callback event = %s"),
                           "eSAP_STOP_BSS_EVENT");
             sapApAppEvent.sapHddEventCode = eSAP_STOP_BSS_EVENT;
-            sapApAppEvent.sapevt.sapStopBssCompleteEvent.status = (eSapStatus )context;
+            sapApAppEvent.sapevt.sapStopBssCompleteEvent.status = (eSapStatus )(long)context;
             break;
 
         case eSAP_STA_ASSOC_EVENT:
@@ -855,7 +855,7 @@ sapSignalHDDevent
 
             event->rate_flags = pCsrRoamInfo->maxRateFlags;
             event->wmmEnabled = pCsrRoamInfo->wmmEnabledSta;
-            event->status = (eSapStatus )context;
+            event->status = (eSapStatus )(long)context;
             event->ch_width = pCsrRoamInfo->ch_width;
             event->chan_info = pCsrRoamInfo->chan_info;
             event->HTCaps = pCsrRoamInfo->ht_caps;
@@ -886,7 +886,7 @@ sapSignalHDDevent
                 sapApAppEvent.sapevt.sapStationDisassocCompleteEvent.reason = eSAP_MAC_INITATED_DISASSOC;
 
             sapApAppEvent.sapevt.sapStationDisassocCompleteEvent.statusCode = pCsrRoamInfo->statusCode;
-            sapApAppEvent.sapevt.sapStationDisassocCompleteEvent.status = (eSapStatus )context;
+            sapApAppEvent.sapevt.sapStationDisassocCompleteEvent.status = (eSapStatus )(long)context;
             break;
 
         case eSAP_STA_SET_KEY_EVENT:
@@ -900,7 +900,7 @@ sapSignalHDDevent
                                          eSAP_STA_SET_KEY_EVENT);
                  return VOS_STATUS_E_INVAL;
              }
-            sapApAppEvent.sapevt.sapStationSetKeyCompleteEvent.status = (eSapStatus )context;
+            sapApAppEvent.sapevt.sapStationSetKeyCompleteEvent.status = (eSapStatus )(long)context;
             vos_mem_copy(&sapApAppEvent.sapevt.sapStationSetKeyCompleteEvent.peerMacAddr,
                          pCsrRoamInfo->peerMac,sizeof(tSirMacAddr));
             break;
@@ -910,7 +910,7 @@ sapSignalHDDevent
                        FL("SAP event callback event = %s"),
                           "eSAP_STA_DEL_KEY_EVENT");
             sapApAppEvent.sapHddEventCode = eSAP_STA_DEL_KEY_EVENT;
-            sapApAppEvent.sapevt.sapStationDeleteKeyCompleteEvent.status = (eSapStatus )context;
+            sapApAppEvent.sapevt.sapStationDeleteKeyCompleteEvent.status = (eSapStatus )(long)context;
             //TODO: Should we need to send the key information
             //sapApAppEvent.sapevt.sapStationDeleteKeyCompleteEvent.keyId = ;
             break;
@@ -975,7 +975,7 @@ sapSignalHDDevent
                        FL("SAP event callback event = %s"),
                           "eSAP_SEND_ACTION_CNF");
             sapApAppEvent.sapHddEventCode = eSAP_SEND_ACTION_CNF;
-            sapApAppEvent.sapevt.sapActionCnf.actionSendSuccess = (eSapStatus)context;
+            sapApAppEvent.sapevt.sapActionCnf.actionSendSuccess = (eSapStatus)(long)context;
             break;
 
        case eSAP_DISCONNECT_ALL_P2P_CLIENT:
@@ -983,7 +983,7 @@ sapSignalHDDevent
                        FL("SAP event callback event = %s"),
                           "eSAP_DISCONNECT_ALL_P2P_CLIENT");
             sapApAppEvent.sapHddEventCode = eSAP_DISCONNECT_ALL_P2P_CLIENT;
-            sapApAppEvent.sapevt.sapActionCnf.actionSendSuccess = (eSapStatus)context;
+            sapApAppEvent.sapevt.sapActionCnf.actionSendSuccess = (eSapStatus)(long)context;
             break;
 
        case eSAP_MAC_TRIG_STOP_BSS_EVENT :
@@ -991,7 +991,7 @@ sapSignalHDDevent
                        FL("SAP event callback event = %s"),
                           "eSAP_MAC_TRIG_STOP_BSS_EVENT");
             sapApAppEvent.sapHddEventCode = eSAP_MAC_TRIG_STOP_BSS_EVENT;
-            sapApAppEvent.sapevt.sapActionCnf.actionSendSuccess = (eSapStatus)context;
+            sapApAppEvent.sapevt.sapActionCnf.actionSendSuccess = (eSapStatus)(long)context;
             break;
 
 
