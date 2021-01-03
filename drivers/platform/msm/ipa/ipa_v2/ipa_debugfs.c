@@ -712,7 +712,7 @@ static ssize_t ipa_read_rt(struct file *file, char __user *ubuf, size_t count,
 	struct ipa_rt_tbl *tbl;
 	struct ipa_rt_entry *entry;
 	struct ipa_rt_tbl_set *set;
-	enum ipa_ip_type ip = (enum ipa_ip_type)file->private_data;
+	enum ipa_ip_type ip = (enum ipa_ip_type)(long)file->private_data;
 	u32 ofst;
 	u32 ofst_words;
 
@@ -836,7 +836,7 @@ static ssize_t ipa_read_flt(struct file *file, char __user *ubuf, size_t count,
 	int j;
 	struct ipa_flt_tbl *tbl;
 	struct ipa_flt_entry *entry;
-	enum ipa_ip_type ip = (enum ipa_ip_type)file->private_data;
+	enum ipa_ip_type ip = (enum ipa_ip_type)(long)file->private_data;
 	struct ipa_rt_tbl *rt_tbl;
 	u32 rt_tbl_idx;
 	u32 bitmap;
