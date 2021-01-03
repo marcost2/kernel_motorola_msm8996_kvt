@@ -1239,7 +1239,7 @@ static int __init bcl_perph_init(void)
 			pr_err("Couldnt find a match\n");
 			goto plt_register;
 		}
-		bcl_perph_version = (enum bcl_hw_type)match->data;
+		bcl_perph_version = (enum bcl_hw_type)(long)match->data;
 		of_node_put(comp_node);
 	}
 
