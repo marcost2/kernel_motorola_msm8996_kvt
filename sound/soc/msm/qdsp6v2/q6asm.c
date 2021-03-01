@@ -1934,11 +1934,11 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 					port->buf[data->token].phys) !=
 						payload[1])) {
 				pr_debug("%s: Expected addr %pK\n",
-				__func__, &port->buf[data->token].phys);
+					__func__, &port->buf[data->token].phys);
 				pr_err("%s: rxedl[0x%x] rxedu [0x%x]\n",
 					__func__, payload[0], payload[1]);
 				spin_unlock_irqrestore(&port->dsp_lock,
-								dsp_flags);
+						dsp_flags);
 				spin_unlock_irqrestore(
 					&(session[session_id].session_lock),
 					flags);
@@ -3857,6 +3857,114 @@ fail_cmd:
 }
 
 /*
+ * q6asm_enc_cfg_blk_pcm_v4 - sends encoder configuration parameters
+ *
+ * @ac: Client session handle
+ * @rate: sample rate
+ * @channels: number of channels
+ * @bits_per_sample: bit width of encoder session
+ * @use_default_chmap: true if default channel map  to be used
+ * @use_back_flavor: to configure back left and right channel
+ * @channel_map: input channel map
+ * @sample_word_size: Size in bits of the word that holds a sample of a channel
+ * @endianness: endianness of the pcm data
+ * @mode: Mode to provide additional info about the pcm input data
+ */
+int q6asm_enc_cfg_blk_pcm_v4(struct audio_client *ac,
+			     uint32_t rate, uint32_t channels,
+			     uint16_t bits_per_sample, bool use_default_chmap,
+			     bool use_back_flavor, u8 *channel_map,
+			     uint16_t sample_word_size, uint16_t endianness,
+			     uint16_t mode)
+{
+	struct asm_multi_channel_pcm_enc_cfg_v4 enc_cfg;
+	struct asm_enc_cfg_blk_param_v2 enc_fg_blk;
+	u8 *channel_mapping;
+	u32 frames_per_buf = 0;
+	int rc;
+
+	if (!use_default_chmap && (channel_map == NULL)) {
+		pr_err("%s: No valid chan map and can't use default\n",
+				__func__);
+		rc = -EINVAL;
+		goto fail_cmd;
+	}
+
+	if (channels > PCM_FORMAT_MAX_NUM_CHANNEL) {
+		pr_err("%s: Invalid channel count %d\n", __func__, channels);
+		rc = -EINVAL;
+		goto fail_cmd;
+	}
+
+	pr_debug("%s: session[%d]rate[%d]ch[%d]bps[%d]wordsize[%d]\n", __func__,
+		 ac->session, rate, channels,
+		 bits_per_sample, sample_word_size);
+
+	memset(&enc_cfg, 0, sizeof(enc_cfg));
+	q6asm_add_hdr(ac, &enc_cfg.hdr, sizeof(enc_cfg), TRUE);
+	atomic_set(&ac->cmd_state, -1);
+	enc_cfg.hdr.opcode = ASM_STREAM_CMD_SET_ENCDEC_PARAM;
+	enc_cfg.encdec.param_id = ASM_PARAM_ID_ENCDEC_ENC_CFG_BLK_V2;
+	enc_cfg.encdec.param_size = sizeof(enc_cfg) - sizeof(enc_cfg.hdr) -
+				    sizeof(enc_cfg.encdec);
+	enc_cfg.encblk.frames_per_buf = frames_per_buf;
+	enc_cfg.encblk.enc_cfg_blk_size = enc_cfg.encdec.param_size -
+					  sizeof(enc_fg_blk);
+	enc_cfg.num_channels = channels;
+	enc_cfg.bits_per_sample = bits_per_sample;
+	enc_cfg.sample_rate = rate;
+	enc_cfg.is_signed = 1;
+	enc_cfg.sample_word_size = sample_word_size;
+	enc_cfg.endianness = endianness;
+	enc_cfg.mode = mode;
+	channel_mapping = enc_cfg.channel_mapping;
+
+	memset(channel_mapping, 0, PCM_FORMAT_MAX_NUM_CHANNEL);
+
+	if (use_default_chmap) {
+		pr_debug("%s: setting default channel map for %d channels",
+			 __func__, channels);
+		if (q6asm_map_channels(channel_mapping, channels,
+					use_back_flavor)) {
+			pr_err("%s: map channels failed %d\n",
+			       __func__, channels);
+			rc = -EINVAL;
+			goto fail_cmd;
+		}
+	} else {
+		pr_debug("%s: Using pre-defined channel map", __func__);
+		memcpy(channel_mapping, channel_map,
+			PCM_FORMAT_MAX_NUM_CHANNEL);
+	}
+
+	rc = apr_send_pkt(ac->apr, (uint32_t *) &enc_cfg);
+	if (rc < 0) {
+		pr_err("%s: Command open failed %d\n", __func__, rc);
+		goto fail_cmd;
+	}
+	rc = wait_event_timeout(ac->cmd_wait,
+			(atomic_read(&ac->cmd_state) >= 0), 5*HZ);
+	if (!rc) {
+		pr_err("%s: timeout opcode[0x%x]\n",
+		       __func__, enc_cfg.hdr.opcode);
+		rc = -ETIMEDOUT;
+		goto fail_cmd;
+	}
+	if (atomic_read(&ac->cmd_state) > 0) {
+		pr_err("%s: DSP returned error[%s]\n",
+		       __func__, adsp_err_get_err_str(
+		       atomic_read(&ac->cmd_state)));
+		rc = adsp_err_get_lnx_err_code(
+				atomic_read(&ac->cmd_state));
+		goto fail_cmd;
+	}
+	return 0;
+fail_cmd:
+	return rc;
+}
+EXPORT_SYMBOL(q6asm_enc_cfg_blk_pcm_v4);
+
+/*
  * q6asm_enc_cfg_blk_pcm_v3 - sends encoder configuration parameters
  *
  * @ac: Client session handle
@@ -4679,6 +4787,11 @@ static int __q6asm_media_format_block_pcm_v3(struct audio_client *ac,
 		return -EINVAL;
 	}
 
+	if (channels > PCM_FORMAT_MAX_NUM_CHANNEL) {
+		pr_err("%s: Invalid channel count %d\n", __func__, channels);
+		return -EINVAL;
+	}
+
 	pr_debug("%s: session[%d]rate[%d]ch[%d]bps[%d]wordsize[%d]\n", __func__,
 		 ac->session, rate, channels,
 		 bits_per_sample, sample_word_size);
@@ -4895,6 +5008,11 @@ static int __q6asm_media_format_block_multi_ch_pcm_v3(struct audio_client *ac,
 	struct asm_multi_channel_pcm_fmt_blk_param_v3 fmt;
 	u8 *channel_mapping;
 	int rc;
+
+	if (channels > PCM_FORMAT_MAX_NUM_CHANNEL) {
+		pr_err("%s: Invalid channel count %d\n", __func__, channels);
+		return -EINVAL;
+	}
 
 	if (channels > PCM_FORMAT_MAX_NUM_CHANNEL) {
 		pr_err("%s: Invalid channel count %d\n", __func__, channels);
