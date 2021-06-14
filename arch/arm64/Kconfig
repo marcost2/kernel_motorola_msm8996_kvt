@@ -16,6 +16,7 @@ config ARM64
 	select ARM_ARCH_TIMER
 	select HAVE_KERNEL_GZIP
 	select HAVE_KERNEL_LZ4
+	select HAVE_KERNEL_XZ
 	select ARM_GIC
 	select AUDIT_ARCH_COMPAT_GENERIC
 	select ARM_GIC_V2M if PCI_MSI
