@@ -99,14 +99,11 @@ core-$(CONFIG_CRYPTO) += arch/arm64/crypto/
 libs-y		:= arch/arm64/lib/ $(libs-y)
 libs-$(CONFIG_EFI_STUB) += drivers/firmware/efi/libstub/
 
-ifeq ($(CONFIG_BUILD_ARM64_KERNEL_COMPRESSION_GZIP),y)
-KBUILD_IMAGE   := Image.gz
-else
-KBUILD_IMAGE   := Image
-endif
-
+# Default target when executing plain make
 ifeq ($(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE),y)
-KBUILD_IMAGE   := $(addsuffix -dtb,$(KBUILD_IMAGE))
+KBUILD_IMAGE	:= Image.gz-dtb
+else
+KBUILD_IMAGE	:= Image.gz
 endif
 
 KBUILD_DTBS	:= dtbs
