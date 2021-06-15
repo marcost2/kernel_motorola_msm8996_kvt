@@ -70,7 +70,7 @@ static int crypto_rng_report(struct sk_buff *skb, struct crypto_alg *alg)
 
 	strscpy(rrng.type, "rng", sizeof(rrng.type));
 
-	rrng.seedsize = seedsize(alg);
+	rrng.seedsize = alg->cra_rng.seedsize;
 
 	return nla_put(skb, CRYPTOCFGA_REPORT_RNG, sizeof(rrng), &rrng);
 }
